@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Meilleure Loterie du Monde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="confetti-canvas"></canvas>
+  <div class="gold-border"></div>
+
+  <!-- Écran 1 : rideau -->
+  <div id="curtain-screen">
+    <div class="curtain curtain-left">
+      <div class="fringe"></div>
+    </div>
+    <div class="curtain curtain-right">
+      <div class="fringe"></div>
+    </div>
+    <div class="curtain-content">
+      <h1>La Meilleure Loterie du Monde</h1>
+      <p>Tous les lots sont gagnants !</p>
+      <button id="btn-open">Tenter ma chance ✨</button>
+    </div>
+  </div>
+
+  <!-- Écran 2 : roue -->
+  <div id="wheel-screen">
+    <div class="neon-arch"></div>
+    <div class="spot spot-violet"></div>
+    <div class="spot spot-blue"></div>
+    <div class="spot spot-turquoise"></div>
+
+    <h1>La Meilleure Loterie du Monde</h1>
+    <p class="subtitle">Tous les lots sont gagnants ! 🎉</p>
+
+    <div class="wheel-wrapper">
+      <div class="pointer"></div>
+      <canvas id="wheel-canvas" width="320" height="320"></canvas>
+    </div>
+
+    <button id="btn-spin">Tourner la roue !</button>
+    <div id="result-card" class="hidden"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
