@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Meilleure Loterie du Monde</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #1a0a0a;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── CURTAIN ── */
+  #curtain-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .curtain {
+    position: absolute;
+    top: 0; width: 51%; height: 100%;
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 8px,
+        rgba(255,255,255,0.04) 16px, rgba(0,0,0,0) 24px),
+      linear-gradient(180deg, #8B0000 0%, #C0392B 30%, #8B0000 60%, #6B0000 100%);
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.18, 1);
+  }
+  .curtain-left  { left: 0; }
+  .curtain-right { right: 0; }
+  .curtain-left.open  { transform: translateX(-100%); }
+  .curtain-right.open { transform: translateX(100%); }
+  .curtain::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; width: 30px;
+    background: rgba(0,0,0,0.22);
+  }
+  .curtain-left::before  { right: 0; }
+  .curtain-right::before { left: 0; }
+  .curtain::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 18px;
+    background: repeating-linear-gradient(90deg, #FFD700 0px, #B8860B 6px, #FFD700 12px);
+    opacity: 0.85;
+  }
+
+  #curtain-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .star-deco { color: #FFD700; font-size: 1.4rem; letter-spacing: 0.5rem; margin-bottom: 1rem; display: block; }
+
+  #curtain-content h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 6vw, 2.4rem);
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 2px 4px rgba(0,0,0,0.9);
+    font-style: italic;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  #curtain-content p {
+    color: #f0d080;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+  }
+
+  #btn-open {
+    background: #FFD700;
+    color: #3a1a00;
+    border: none;
+    padding: 0.95rem 2.5rem;
+    font-size: 1.05rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(255,215,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.02em;
+  }
+  #btn-open:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(255,215,0,0.6); }
+
+  /* ── WHEEL SCREEN — plateau TV néon ── */
+  #wheel-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+    background: #07080f;
+    padding: 2rem 1rem 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Néon cyan courbé — haut gauche */
+  #wheel-screen::before {
+    content: '';
+    position: fixed;
+    top: -60px; left: -80px;
+    width: 500px; height: 260px;
+    border: 5px solid #00e5ff;
+    border-radius: 50%;
+    box-shadow: 0 0 18px #00e5ff, 0 0 40px rgba(0,229,255,0.3);
+    opacity: 0.55;
+    pointer-events: none;
+    transform: rotate(-15deg);
+  }
+
+  /* Sol doré en bas */
+  #wheel-screen::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 90px;
+    background: linear-gradient(180deg,
+      transparent 0%,
+      rgba(180,120,0,0.18) 40%,
+      rgba(220,160,0,0.35) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Spots lumineux d'ambiance */
+  .spot {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+  }
+  .spot-1 { width:220px; height:220px; top:-40px; right:-30px;  background: rgba(180,0,255,0.22); }
+  .spot-2 { width:180px; height:180px; bottom:60px; left:-40px; background: rgba(0,120,255,0.2); }
+  .spot-3 { width:140px; height:140px; top:40%;  right:0;       background: rgba(0,220,180,0.15); }
+
+  #wheel-screen h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 5vw, 1.7rem);
+    color: #FFD700;
+    text-align: center;
+    font-style: italic;
+    text-shadow:
+      0 0 18px rgba(255,215,0,0.7),
+      0 0 40px rgba(255,215,0,0.3),
+      0 1px 2px rgba(0,0,0,0.9);
+    margin-bottom: 0.3rem;
+    position: relative;
+  }
+
+  #wheel-screen .sub {
+    color: #f0d080;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1.8rem;
+    text-align: center;
+    text-shadow: 0 0 8px rgba(255,215,0,0.4);
+    position: relative;
+  }
+
+  #wheel-wrap {
+    position: relative;
+    width: 320px; height: 320px;
+    margin-bottom: 0.8rem;
+    filter: drop-shadow(0 0 24px rgba(0,200,255,0.25)) drop-shadow(0 4px 16px rgba(0,0,0,0.7));
+  }
+
+  #wheel { border-radius: 50%; display: block; }
+
+  #pointer {
+    position: absolute;
+    top: -18px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 28px solid #e74c3c;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    z-index: 10;
+  }
+
+  #btn-spin {
+    background: #c0392b;
+    color: white;
+    border: none;
+    padding: 0.85rem 2.5rem;
+    font-size: 1.05rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 1.2rem;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+    transition: transform 0.15s, opacity 0.2s;
+    letter-spacing: 0.02em;
+  }
+  #btn-spin:hover:not(:disabled) { transform: scale(1.04); }
+  #btn-spin:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── RESULT CARD ── */
+  #result-card {
+    display: none;
+    margin-top: 2rem;
+    background: rgba(40, 20, 5, 0.95);
+    border: 2px solid #FFD700;
+    border-radius: 20px;
+    padding: 1.8rem 1.8rem;
+    text-align: center;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 8px 32px rgba(255,215,0,0.15);
+    animation: cardIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  #result-emoji  { font-size: 3.8rem; display: block; margin-bottom: 0.5rem; }
+  #result-label  { color: #FFD700; font-size: 1.35rem; font-weight: 800; margin-bottom: 0.6rem; }
+  #result-desc   { color: #c8a87a; font-size: 0.9rem; line-height: 1.55; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ÉCRAN 1 -->
+<div id="curtain-screen">
+  <div class="curtain curtain-left"></div>
+  <div class="curtain curtain-right"></div>
+  <div id="curtain-content">
+    <span class="star-deco">✦ ✦ ✦</span>
+    <h1>La Meilleure<br>Loterie du Monde</h1>
+    <p>Tous les lots sont gagnants !</p>
+    <button id="btn-open">Tenter ma chance ✨</button>
+  </div>
+</div>
+
+<!-- ÉCRAN 2 + RÉSULTAT -->
+  <div id="wheel-screen">
+  <div class="spot spot-1"></div>
+  <div class="spot spot-2"></div>
+  <div class="spot spot-3"></div>
+  <h1>La Meilleure Loterie du Monde</h1>
+  <p class="sub">Tous les lots sont gagnants ! 🎉</p>
+
+  <div id="wheel-wrap">
+    <div id="pointer"></div>
+    <canvas id="wheel" width="320" height="320"></canvas>
+  </div>
+
+  <button id="btn-spin">Tourner la roue !</button>
+
+  <div id="result-card">
+    <span id="result-emoji"></span>
+    <div id="result-label"></div>
+    <div id="result-desc"></div>
+  </div>
+</div>
+
+<script>
+const LOTS = [
+  { emoji: '🎧', label: 'Playlist sur mesure',              color: '#E24B4A', desc: 'Ressuscitons la playlist "Miel pour les oreilles en l\'honneur de Pascalou" 🎶' },
+  { emoji: '🍿', label: 'Film à regarder ensemble',         color: '#D85A30', desc: 'Plutôt qu\'une vidéo de Feldup, regardons un film ensemble 🛋️' },
+  { emoji: '🌍', label: 'Défi GeoGuessr',                   color: '#1D9E75', desc: 'Relèveras-tu le défi de la carte spéciale Alsace ? 🗺️' },
+  { emoji: '📦', label: 'Colis surprise',                   color: '#7F77DD', desc: 'Je peux pas en dire plus sinon c\'est plus une surprise... 🤫' },
+  { emoji: '🎨', label: 'Défi peinture',                    color: '#D4537E', desc: 'Le même thème — chacun peint de son côté, et on compare nos versions 🖌️' },
+  { emoji: '🎉', label: 'Invitation au Toulouse Game Show', color: '#BA7517', desc: 'Je t\'invite à venir au Toulouse Game Show le 28 & 29 Novembre 2026 🎮' },
+];
+
+const NB = LOTS.length;
+const SLICE = (2 * Math.PI) / NB;
+
+const wCanvas = document.getElementById('wheel');
+const wCtx = wCanvas.getContext('2d');
+const CX = 160, CY = 160, R = 152;
+
+function drawWheel(angle) {
+  wCtx.clearRect(0, 0, 320, 320);
+
+  for (let i = 0; i < NB; i++) {
+    const start = angle + i * SLICE;
+    const end   = start + SLICE;
+    const lot   = LOTS[i];
+
+    // Segment
+    wCtx.beginPath();
+    wCtx.moveTo(CX, CY);
+    wCtx.arc(CX, CY, R, start, end);
+    wCtx.closePath();
+    wCtx.fillStyle = lot.color;
+    wCtx.fill();
+    wCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+    wCtx.lineWidth = 2;
+    wCtx.stroke();
+
+    // Text — positioned along the segment midpoint radius
+    wCtx.save();
+    wCtx.translate(CX, CY);
+    wCtx.rotate(start + SLICE / 2);
+
+    wCtx.textAlign = 'center';
+    wCtx.fillStyle = 'white';
+    wCtx.shadowColor = 'rgba(0,0,0,0.7)';
+    wCtx.shadowBlur = 3;
+
+    const words = lot.label.split(' ');
+    const lineH = 13;
+    const textR = R * 0.62; // distance from center
+
+    // Split into max 3 lines
+    let lines = [];
+    if (words.length === 1) {
+      lines = [words[0]];
+    } else if (words.length === 2) {
+      lines = words;
+    } else {
+      // 3+ words: try to balance
+      const mid = Math.ceil(words.length / 2);
+      lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+    }
+
+    wCtx.font = 'bold 11px Nunito, sans-serif';
+    const totalH = (lines.length - 1) * lineH;
+    lines.forEach((line, li) => {
+      wCtx.fillText(line, textR, -totalH / 2 + li * lineH + 4);
+    });
+
+    wCtx.restore();
+  }
+
+  // Center circle
+  wCtx.beginPath();
+  wCtx.arc(CX, CY, 22, 0, 2 * Math.PI);
+  wCtx.fillStyle = 'white';
+  wCtx.fill();
+  wCtx.strokeStyle = '#ddd';
+  wCtx.lineWidth = 2;
+  wCtx.stroke();
+}
+
+let currentAngle = 0;
+let spinning = false;
+drawWheel(currentAngle);
+
+// Curtain
+document.getElementById('btn-open').addEventListener('click', () => {
+  document.querySelector('.curtain-left').classList.add('open');
+  document.querySelector('.curtain-right').classList.add('open');
+  setTimeout(() => {
+    document.getElementById('curtain-screen').style.display = 'none';
+    document.getElementById('wheel-screen').style.display = 'flex';
+  }, 1300);
+});
+
+// Spin
+document.getElementById('btn-spin').addEventListener('click', spin);
+
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  document.getElementById('btn-spin').disabled = true;
+  document.getElementById('result-card').style.display = 'none';
+
+  const extraTurns = (5 + Math.random() * 5) * 2 * Math.PI;
+  const extraAngle = Math.random() * 2 * Math.PI;
+  const totalDelta = extraTurns + extraAngle;
+  const duration = 4000;
+  const start = performance.now();
+  const startAngle = currentAngle;
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+
+  function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    currentAngle = startAngle + totalDelta * easeOut(t);
+    drawWheel(currentAngle);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      currentAngle = startAngle + totalDelta;
+      drawWheel(currentAngle);
+      spinning = false;
+      showResult();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showResult() {
+  const pointer = -Math.PI / 2;
+  const normalized = ((pointer - currentAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  const idx = Math.floor(normalized / SLICE) % NB;
+  const lot = LOTS[idx];
+
+  document.getElementById('result-emoji').textContent = lot.emoji;
+  document.getElementById('result-label').textContent = lot.label;
+  document.getElementById('result-desc').textContent  = lot.desc;
+
+  const card = document.getElementById('result-card');
+  card.style.display = 'block';
+  card.style.borderColor = lot.color;
+
+  launchConfetti(lot.color);
+  document.getElementById('btn-spin').disabled = false;
+}
+
+// Confetti
+const cCanvas = document.getElementById('confetti-canvas');
+const cCtx = cCanvas.getContext('2d');
+let confettiRAF = null;
+
+function launchConfetti(lotColor) {
+  cCanvas.width  = window.innerWidth;
+  cCanvas.height = window.innerHeight;
+
+  const colors = [lotColor, '#FFD700', '#ffffff', '#C0392B', '#7F77DD', '#1D9E75'];
+  const pieces = Array.from({ length: 120 }, () => ({
+    x: Math.random() * cCanvas.width,
+    y: -10 - Math.random() * 100,
+    w: 6 + Math.random() * 8,
+    h: 10 + Math.random() * 6,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - 0.5) * 3,
+    vy: 2 + Math.random() * 4,
+    rot: Math.random() * 360,
+    vrot: (Math.random() - 0.5) * 8,
+    alpha: 1,
+  }));
+
+  if (confettiRAF) cancelAnimationFrame(confettiRAF);
+  let f = 0;
+
+  function step() {
+    cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.rot += p.vrot;
+      if (f > 90) p.alpha = Math.max(0, p.alpha - 0.015);
+      cCtx.save();
+      cCtx.globalAlpha = p.alpha;
+      cCtx.translate(p.x, p.y);
+      cCtx.rotate(p.rot * Math.PI / 180);
+      cCtx.fillStyle = p.color;
+      cCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      cCtx.restore();
+    });
+    f++;
+    if (f < 150) confettiRAF = requestAnimationFrame(step);
+    else cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+  }
+  confettiRAF = requestAnimationFrame(step);
+}
+</script>
+</body>
+</html>
